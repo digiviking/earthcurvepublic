@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Aardkromming — demo (sensor-ready)</title>
+<style>
+:root{--accent:#0b84ff;--red:#e64545;--blue:#1f7aee;--green:#2fb06b}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial;background:#f7f9ff;margin:12px;color:#111}
+.card{background:#fff;padding:16px;border-radius:10px;max-width:920px;margin:auto;box-shadow:0 8px 30px rgba(20,20,30,0.06)}
+h1{margin:0 0 8px;font-size:18px}
+.row{display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap}
+.left{flex:1 1 460px;min-width:300px}
+.right{width:360px;min-width:300px}
+label{display:block;font-weight:700;margin-bottom:6px}
+select,input{padding:8px;border-radius:8px;border:1px solid #ddd}
+button{padding:8px 10px;border-radius:8px;border:0;background:var(--accent);color:#fff;cursor:pointer}
+.controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.hint{color:#666;margin-top:8px;font-size:13px}
+.stats{background:#fafafa;padding:10px;border-radius:8px;margin-top:10px;font-size:14px}
+.small{font-size:13px;color:#444}
+.status{font-weight:700;margin-top:8px}
+.compass{width:240px;height:240px;border-radius:50%;background:linear-gradient(#fff,#efefef);position:relative;display:flex;align-items:center;justify-content:center;border:1px solid #e6e9ef}
+.north{position:absolute;top:8px;font-weight:700}
+.compassArrow{position:absolute;left:50%;top:50%;width:8px;height:120px;transform-origin:50% 50%;transform:translate(-50%,-50%) rotate(0deg);display:flex;align-items:flex-start;transition:transform 220ms cubic-bezier(.2,.8,.25,1)}
+.compassArrow .shaft{width:100%;height:68%;background:var(--red);border-radius:4px;position:relative}
+.compassArrow .shaft::after{content:"";position:absolute;top:-12px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-bottom:16px solid var(--red)}
+.meter{width:240px;height:240px;border-radius:12px;background:linear-gradient(#fff,#f3f7ff);position:relative;border:1px solid #e6eefc;box-shadow:inset 0 -6px 12px rgba(0,0,0,0.03)}
+.horizon{position:absolute;left:18px;right:18px;top:50%;height:3px;background:#d6e0ff;border-radius:3px;transform:translateY(-50%)}
+.needle{position:absolute;left:50%;top:50%;width:140px;height:10px;background:var(--blue);border-radius:6px;transform-origin:left center;transform:translate(-50%,-50%) rotate(0deg);transition:transform 220ms linear, background 220ms linear}
+.needle::after{content:"";position:absolute;right:-12px;top:50%;transform:translateY(-50%);width:0;height:0;border-left:12px solid var(--blue);border-top:7px solid transparent;border-bottom:7px solid transparent}
+.needleCurrent{position:absolute;left:50%;top:50%;width:110px;height:4px;background:#222;border-radius:4px;transform-origin:left center;transform:translate(-50%,-50%) rotate(0deg);transition:transform 120ms linear}
+.pivot{position:absolute;left:50%;top:50%;width:14px;height:14px;background:#fff;border:3px solid #cfdcff;border-radius:50%;transform:translate(-50%,-50%)}
+.log{background:#0b1220;color:#dfefff;padding:10px;border-radius:8px;max-height:160px;overflow:auto;font-size:12px;margin-top:8px}
+.footer{font-size:13px;color:#666;margin-top:12px;text-align:center}
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>Aardkromming — demo (sensor-ready)</h1>
+    <div class="hint">Gebruik: vul je locatie of klik 'Gebruik mijn locatie', kies een stad → klik 'Bereken richting & hoek'. Daarna klik 'Activeer device-sensors' en draai/kantel je toestel. De rode pijl wijst naar de stad; de blauwe pijl is de vereiste hoek; het zwarte marker toont actuele pitch.</div>
+
+    <div class="row" style="margin-top:12px">
+      <div class="left">
+        <label>Jouw locatie</label>
+        <div class="controls">
+          <button id="btn-getloc">Gebruik mijn locatie (geolocatie)</button>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input id="lat" placeholder="lat" style="width:120px" />
+            <input id="lon" placeholder="lon" style="width:120px" />
+            <button id="btn-setmanual">Set</button>
+          </div>
+        </div>
+
+        <label style="margin-top:12px">Selecteer hoofdstad / plaats</label>
+        <select id="citySelect" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd;">
+          <option value="Amsterdam,52.370216,4.895168">Amsterdam — Nederland</option>
+          <option value="DenHaag,52.070498,4.300700">Den Haag — Nederland</option>
+          <option value="London,51.507351,-0.127758">London — VK</option>
+          <option value="Belfast,54.597285,-5.930120">Belfast — Noord-Ierland</option>
+          <option value="Sydney,-33.868820,151.209296">Sydney — Australia</option>
+          <option value="NewYork,40.712776,-74.005974">New York — USA</option>
+          <option value="Tokyo,35.676193,139.650311">Tokyo — Japan</option>
+          <option value="Singapore,1.352083,103.819836">Singapore</option>
+          <option value="DenPasar,-8.650000,115.216667">Den Pasar (Bali)</option>
+          <option value="TelAviv,32.085300,34.781768">Tel Aviv — Israel</option>
+          <option value="AbuDhabi,24.453884,54.377343">Abu Dhabi — UAE</option>
+          <option value="Bangkok,13.756331,100.501762">Bangkok — Thailand</option>
+          <option value="Miami,25.761681,-80.191788">Miami — USA</option>
+          <option value="Reykjavik,64.126521,-21.817439">Reykjavik — Iceland</option>
+          <option value="Marrakech,31.629473,-7.981084">Marrakech — Morocco</option>
+          <option value="CapeTown,-33.924869,18.424055">Kaapstad — South Africa</option>
+        </select>
+
+        <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
+          <button id="btn-calc">Bereken richting & hoek</button>
+          <button id="btn-enable-sensors" style="background:#333;color:#fff">Activeer device-sensors</button>
+        </div>
+
+        <div class="stats" id="stats" aria-live="polite">
+          <div><strong>Status:</strong> nog geen berekening</div>
+        </div>
+
+        <div style="margin-top:10px">
+          <div class="small"><strong>Sensorstatus & logs</strong></div>
+          <div id="sensorStatus" class="status">Listener: uit</div>
+          <div id="usedSource" class="small">Bron: onbekend</div>
+          <pre id="log" class="log">(nog geen events)</pre>
+        </div>
+      </div>
+
+      <div class="right">
+        <div style="text-align:center;font-weight:700;margin-bottom:6px">Compass (rode pijl = richting doel)</div>
+        <div class="compass" id="compass">
+          <div class="north">N</div>
+          <div class="compassArrow" id="compassArrow"><div class="shaft"></div></div>
+        </div>
+
+        <div style="height:12px"></div>
+
+        <div style="text-align:center;font-weight:700;">Inclinometer</div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+          <div class="meter" id="meter">
+            <div class="horizon"></div>
+            <div class="needle" id="needle"></div>
+            <div class="needleCurrent" id="needleCurrent" style="display:none"></div>
+            <div class="pivot"></div>
+          </div>
+          <div class="small" id="elevText">—</div>
+          <div id="liveVals" class="small">heading: — ° | pitch: — ° | gamma: —</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="hint" style="margin-top:12px">Als Chrome geen sensoren levert: upload dit bestand via GitHub en open met de htmlpreview-link of via GitHub Pages (HTTPS). Zie instructies hieronder na het bestand.</div>
+    <div class="footer">Test op mobiel voor beste resultaat. DeviceOrientation werkt niet uniform in álle browsers.</div>
+  </div>
+
+<script>
+// ---- helpers ----
+const R = 6371;
+function toRad(d){ return d*Math.PI/180; }
+function toDeg(r){ return r*180/Math.PI; }
+function haversine(lat1,lon1,lat2,lon2){ const φ1=toRad(lat1), φ2=toRad(lat2); const dφ=toRad(lat2-lat1), dλ=toRad(lon2-lon1); const a=Math.sin(dφ/2)**2+Math.cos(φ1)*Math.cos(φ2)*Math.sin(dλ/2)**2; const c=2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a)); return {distance_km:R*c, central_angle_rad:c};}
+function initialBearing(lat1,lon1,lat2,lon2){ const φ1=toRad(lat1), φ2=toRad(lat2); const Δλ=toRad(lon2-lon1); const y=Math.sin(Δλ)*Math.cos(φ2); const x=Math.cos(φ1)*Math.sin(φ2)-Math.sin(φ1)*Math.cos(φ2)*Math.cos(Δλ); let θ=Math.atan2(y,x); return (toDeg(θ)+360)%360; }
+
+// ---- DOM ----
+const btnGetLoc = document.getElementById('btn-getloc');
+const btnSetManual = document.getElementById('btn-setmanual');
+const btnCalc = document.getElementById('btn-calc');
+const btnEnableSensors = document.getElementById('btn-enable-sensors');
+const latInput = document.getElementById('lat');
+const lonInput = document.getElementById('lon');
+const stats = document.getElementById('stats');
+const compassArrow = document.getElementById('compassArrow');
+const needle = document.getElementById('needle');
+const needleCurrent = document.getElementById('needleCurrent');
+const elevText = document.getElementById('elevText');
+const liveVals = document.getElementById('liveVals');
+const logEl = document.getElementById('log');
+const sensorStatus = document.getElementById('sensorStatus');
+const usedSource = document.getElementById('usedSource');
+
+let lastCalc = {bearing:0, elev_deg:0, cityName:'(nog niet berekend)', distance_km:0};
+let deviceHeading = null, devicePitch = null;
+let listening=false, eventCount=0, absSensor=null;
+
+// ---- geolocation ----
+btnGetLoc.onclick = () => {
+  if (!navigator.geolocation) return alert('Geolocatie niet ondersteund');
+  btnGetLoc.disabled=true; btnGetLoc.textContent='Locatie ophalen…';
+  navigator.geolocation.getCurrentPosition(pos=>{
+    latInput.value = pos.coords.latitude.toFixed(6);
+    lonInput.value = pos.coords.longitude.toFixed(6);
+    btnGetLoc.disabled=false; btnGetLoc.textContent='Gebruik mijn locatie (geolocatie)';
+    stats.innerHTML = `<div><strong>Status:</strong> locatie gezet via geolocatie</div>`;
+  }, err => {
+    btnGetLoc.disabled=false; btnGetLoc.textContent='Gebruik mijn locatie (geolocatie)';
+    alert('Kon locatie niet ophalen: ' + err.message);
+  }, {enableHighAccuracy:true, timeout:10000});
+};
+btnSetManual.onclick = () => { if(!latInput.value||!lonInput.value) return alert('Vul coords in'); stats.innerHTML=`<div><strong>Status:</strong> handmatig ingesteld</div>`; };
+
+// ---- calc ----
+btnCalc.onclick = () => {
+  const lat = parseFloat(latInput.value), lon = parseFloat(lonInput.value);
+  if (!Number.isFinite(lat)||!Number.isFinite(lon)) return alert('Vul geldige coords in of gebruik geolocatie');
+  const s = document.getElementById('citySelect').value.split(',');
+  const selText = document.getElementById('citySelect').selectedOptions[0].text;
+  const cityLat = parseFloat(s[1]), cityLon = parseFloat(s[2]);
+  const {distance_km, central_angle_rad} = haversine(lat,lon,cityLat,cityLon);
+  const bearing = initialBearing(lat,lon,cityLat,cityLon);
+  const elev_rad = central_angle_rad/2; const elev_deg = toDeg(elev_rad);
+  lastCalc = {lat,lon,cityLat,cityLon,bearing,elev_deg,distance_km,cityName:selText};
+  stats.innerHTML = `<div><strong>Van:</strong> ${lat.toFixed(5)}, ${lon.toFixed(5)}</div>
+  <div><strong>Naar:</strong> ${selText}</div>
+  <div><strong>Afstand:</strong> ${distance_km.toLocaleString(undefined,{maximumFractionDigits:0})} km</div>
+  <div><strong>Bearing:</strong> ${bearing.toFixed(1)}°</div>
+  <div><strong>Hoek onder horizon:</strong> ${elev_deg.toFixed(1)}°</div>`;
+  updateVisuals();
+};
+
+// ---- logging util ----
+function appendLog(msg){
+  const t=new Date().toLocaleTimeString();
+  logEl.textContent = `${t} — ${msg}\n` + logEl.textContent;
+  if (logEl.textContent.length>4000) logEl.textContent = logEl.textContent.slice(0,4000);
+}
+
+// ---- quaternion -> euler helper ----
+function quatToEuler(q){
+  const x=q[0], y=q[1], z=q[2], w=q[3];
+  const ysqr = y*y;
+  let t0 = +2.0 * (w * x + y * z);
+  let t1 = +1.0 - 2.0 * (x * x + ysqr);
+  const roll = Math.atan2(t0, t1);
+  let t2 = +2.0 * (w * y - z * x);
+  if (t2>1) t2=1; if (t2<-1) t2=-1;
+  const pitch = Math.asin(t2);
+  let t3 = +2.0 * (w * z + x * y);
+  let t4 = +1.0 - 2.0 * (ysqr + z * z);
+  const yaw = Math.atan2(t3, t4);
+  return { yaw: toDeg(yaw), pitch: toDeg(pitch), roll: toDeg(roll) };
+}
+
+// ---- AbsoluteOrientationSensor fallback ----
+function startAbsoluteSensor(){
+  if (typeof AbsoluteOrientationSensor === 'undefined') { appendLog('AbsoluteOrientationSensor niet beschikbaar'); usedSource.textContent='Bron: geen AbsoluteOrientationSensor'; return; }
+  try {
+    absSensor = new AbsoluteOrientationSensor({frequency:30});
+    absSensor.onreading = () => {
+      const q = absSensor.quaternion;
+      if (q && q.length>=4){
+        const e = quatToEuler(q);
+        let yaw = (e.yaw + 360) % 360;
+        let pitch = e.pitch;
+        deviceHeading = yaw;
+        devicePitch = pitch;
+        appendLog(`AbsoluteOrientationSensor -> yaw=${yaw.toFixed(2)} pitch=${pitch.toFixed(2)}`);
+        usedSource.textContent = 'Bron: AbsoluteOrientationSensor (quaternion)';
+        updateVisuals();
+      }
+    };
+    absSensor.onerror = ev => appendLog('AbsoluteOrientationSensor fout: ' + (ev.error || ev));
+    absSensor.start();
+    appendLog('AbsoluteOrientationSensor gestart');
+  } catch(err){
+    appendLog('Fout bij starten AbsoluteOrientationSensor: ' + err);
+  }
+}
+
+// ---- deviceorientation handler ----
+function handleOrientation(e){
+  eventCount = (eventCount||0) + 1;
+  appendLog(`deviceorientation raw a=${e.alpha} b=${e.beta} g=${e.gamma} webkit=${e.webkitCompassHeading} absolute=${e.absolute}`);
+  // prefer webkitCompassHeading
+  if (typeof e.webkitCompassHeading === 'number' && !isNaN(e.webkitCompassHeading)){
+    deviceHeading = e.webkitCompassHeading;
+    usedSource.textContent = 'Bron: webkitCompassHeading';
+  } else if (typeof e.alpha === 'number' && !isNaN(e.alpha)){
+    deviceHeading = (e.alpha + 360) % 360;
+    usedSource.textContent = 'Bron: event.alpha';
+  } else deviceHeading = null;
+
+  if (typeof e.beta === 'number' && !isNaN(e.beta)){
+    let p = e.beta; if (p>90) p=90; if (p<-90) p=-90;
+    devicePitch = p;
+  } else devicePitch = null;
+
+  liveVals.textContent = `heading: ${deviceHeading===null ? '—' : deviceHeading.toFixed(1)+'°'} | pitch: ${devicePitch===null ? '—' : devicePitch.toFixed(1)+'°'} | gamma: ${typeof e.gamma==='number' ? e.gamma.toFixed(1)+'°' : '—'}`;
+  sensorStatus.textContent = `Listener: actief — events binnen: ${eventCount}`;
+  updateVisuals();
+}
+
+// ---- enable sensors (permission handling) ----
+async function enableSensors(){
+  if (listening) return;
+  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function'){
+    try {
+      const resp = await DeviceOrientationEvent.requestPermission();
+      appendLog('requestPermission -> ' + resp);
+      if (resp !== 'granted'){ appendLog('Permission geweigerd'); return; }
+    } catch(err){ appendLog('requestPermission fout: ' + err); }
+  }
+  window.addEventListener('deviceorientation', handleOrientation, true);
+  window.addEventListener('deviceorientationabsolute', handleOrientation, true);
+  window.addEventListener('devicemotion', ev => appendLog(`devicemotion accel: x=${ev.accelerationIncludingGravity?.x||'n/a'}`), true);
+  startAbsoluteSensor();
+  listening = true;
+  sensorStatus.textContent = 'Listener: actief — wacht op events...';
+  btnEnableSensors.textContent = 'Sensors actief';
+  btnEnableSensors.style.background = '#2b8e46';
+  appendLog('Event listeners geregistreerd (deviceorientation, devicemotion)');
+}
+
+// ---- visuals update ----
+function updateVisuals(){
+  const bearing = lastCalc.bearing || 0;
+  if (deviceHeading !== null){
+    let rot = (bearing - deviceHeading);
+    if (rot > 180) rot -= 360;
+    if (rot < -180) rot += 360;
+    compassArrow.style.transform = `translate(-50%,-50%) rotate(${rot}deg)`;
+  } else {
+    compassArrow.style.transform = `translate(-50%,-50%) rotate(${bearing}deg)`;
+  }
+  const elev = lastCalc.elev_deg || 0;
+  const displayDeg = Math.min(Math.max(elev,0),90);
+  needle.style.transform = `translate(-50%,-50%) rotate(${displayDeg}deg)`;
+  if (displayDeg <= 30) needle.style.background = '#37c161'; else if (displayDeg <=65) needle.style.background = '#ffd166'; else needle.style.background = '#ff7b7b';
+  elevText.textContent = `${elev.toFixed(1)}° onder horizon (doel)`;
+  if (devicePitch !== null){
+    needleCurrent.style.display = 'block';
+    let pitchDisplay = Math.max(Math.min(devicePitch,90),-90);
+    needleCurrent.style.transform = `translate(-50%,-50%) rotate(${pitchDisplay}deg)`;
+  } else needleCurrent.style.display = 'none';
+}
+
+// ---- wiring ----
+btnEnableSensors.onclick = enableSensors;
+[latInput, lonInput].forEach(i => i.addEventListener('keydown', e => { if (e.key === 'Enter') btnCalc.click(); }));
+if (!latInput.value) { latInput.value='52.370216'; lonInput.value='4.895168'; }
+appendLog('Demo geladen — klik "Bereken richting & hoek" en daarna "Activeer device-sensors".');
+</script>
+</body>
+</html>
